@@ -2,6 +2,14 @@
 
 # Install
 
+# Run
+
+![](assets/images/2023-12-04-11-19-34.png)  
+
+//todo 確認  
+設定を元に戻すには、
+`C:\Users\(ユーザー名)\AppData\Local\Google\Chrome\User Data\Default\Preferences` の、`"allowed_origin_protocol_pairs":` の項目 `{"file://":{"kickexplorer":true}}` を削除する  
+
 # Uninstall
 
 # Restrictions
