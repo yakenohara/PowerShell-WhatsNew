@@ -21,36 +21,50 @@
 # このファイルは UTF-8 (BOM 付き) で保存すること。(ターミナルに日本語メッセージを表示するため)
 # </CAUTION!>
 
-# PowerShell ターミナルで `.\WhatsNew.ps1 -DirInfo ([System.IO.DirectoryInfo]::new("D:\yakenohara\PowerShell-WhatsNew\assets"))` でも実行できる
-
 <#
     .SYNOPSIS
     //todo 関数またはスクリプトの簡単な説明
     
     .PARAMETER DirInfo
     走査対象ディレクトリ
+    文字列型か [System.IO.DirectoryInfo] 型である必要があります。
+
+    .PARAMETER Depth
+    走査対象ディレクトリからの相対的深さ (デフォルト: 1)
+    例えば、"D:\test" の配下の "D:\test\xxx\yyy" が配置された階層に対して走査したい場合、`2` を指定します。
+    `0` の場合は、走査対象ディレクトリが配置された階層、
+    `-1` の場合は、走査対象ディレクトリの 1 階層上を意味します。
 #>
 # Note:
 # '.PARAMETER <パラメーター名>' で使用する "<パラメーター名>" は、アッパーキャメルケースを使用しないと `Get-Help <スクリプトファイル> -full` 実行時にうまく認識されないらしい
 # https://learn.microsoft.com/ja-jp/previous-versions/windows/powershell-scripting/hh847834(v=wps.640)?redirectedfrom=MSDN#parameter-%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%BC%E5%90%8D
 
 Param(
+    # 走査対象ディレクトリ
     [ValidateScript({
-        if (($_ -ne $null ) -and ($_ -isnot [System.String]) -and ($_ -isnot [System.IO.DirectoryInfo])){ # 型は
+        if (($_ -ne $null ) -and ($_ -isnot [System.String]) -and ($_ -isnot [System.IO.DirectoryInfo])){ # 型は文字列か [DirectoryInfo](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.directoryinfo?view=net-8.0) でないといけない
             return $false
         } else {
             return $true
         }
-    })]$DirInfo
+    })]$DirInfo,
+
+    # 階層の深さ
+    [System.Int32]$Depth = 1 # 型は signed int (32bit) でないといけない
 )
 
-
+# <引数チェック>
 if ($DirInfo -eq $null) { # 指定されなかった場合
     $DirInfo = $PSScriptRoot # この .ps1 ファイルが配置されたディレクトリを指定。文字列型。(`Get-ChildItem` のオプション `-Path` が文字列型である必要があるため)
 
 } elseif ($DirInfo -is [System.IO.DirectoryInfo]) { # ディレクトリオブジェクトの指定の場合
     $DirInfo = $DirInfo.FullName # パス文字列に変換 (`Get-ChildItem` のオプション `-Path` が文字列型である必要があるため)
 }
+# </引数チェック>
+
+#todo 削除
+Write-Host $DirInfo
+Write-Host $Depth
 
 # 検索対象となる `System.IO.FileInfo` オブジェクトリストを作成
 $obj_finfos = 
