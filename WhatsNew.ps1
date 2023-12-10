@@ -30,10 +30,11 @@
     文字列型か [System.IO.DirectoryInfo] 型である必要があります。
 
     .PARAMETER Depth
-    走査対象ディレクトリからの相対的深さ (デフォルト: 1)
-    例えば、"D:\test" の配下の "D:\test\xxx\yyy" が配置された階層に対して走査したい場合、`2` を指定します。
-    `0` の場合は、走査対象ディレクトリが配置された階層、
-    `-1` の場合は、走査対象ディレクトリの 1 階層上を意味します。
+    走査対象ディレクトリからの相対的深さ (デフォルト: 0)
+    例えば、"D:\test" の配下の "D:\test\xxx\yyy" が配置された階層にまで走査したい場合、`1` を指定します。
+    `0` の場合は、走査対象ディレクトリ直下、
+    `-1` の場合は、走査対象ディレクトリが配置された階層、
+    `-2` の場合は、走査対象ディレクトリの 1 階層上を意味します。
 #>
 # Note:
 # '.PARAMETER <パラメーター名>' で使用する "<パラメーター名>" は、アッパーキャメルケースを使用しないと `Get-Help <スクリプトファイル> -full` 実行時にうまく認識されないらしい
@@ -50,29 +51,45 @@ Param(
     })]$DirInfo,
 
     # 階層の深さ
-    [System.Int32]$Depth = 1 # 型は signed int (32bit) でないといけない
+    [System.Int32]$Depth = 0 # 型は signed int (32bit) でないといけない
 )
 
 # <引数チェック>
 if ($DirInfo -eq $null) { # 指定されなかった場合
-    $DirInfo = $PSScriptRoot # この .ps1 ファイルが配置されたディレクトリを指定。文字列型。(`Get-ChildItem` のオプション `-Path` が文字列型である必要があるため)
+    [System.String]$DirInfo = $PSScriptRoot # この .ps1 ファイルが配置されたディレクトリを指定。文字列型。(`Get-ChildItem` のオプション `-Path` が文字列型である必要があるため)
 
 } elseif ($DirInfo -is [System.IO.DirectoryInfo]) { # ディレクトリオブジェクトの指定の場合
-    $DirInfo = $DirInfo.FullName # パス文字列に変換 (`Get-ChildItem` のオプション `-Path` が文字列型である必要があるため)
+    [System.String]$DirInfo = $DirInfo.FullName # パス文字列に変換 (`Get-ChildItem` のオプション `-Path` が文字列型である必要があるため)
 }
 # </引数チェック>
 
+if ($Depth -lt 0) {
+    [System.UInt32]$NumOfUpLevelOfHierarchy = $Depth * (-1)
+    $DirInfo = Convert-Path ($DirInfo + ("\.." * $NumOfUpLevelOfHierarchy))
+    # Note:
+    # 存在しないパスが指定された場合は "Convert-Path : パス '(パス名)' が存在しないため検出できません。" でエラー終了する
+
+    [System.UInt32]$uint32_ScanDepth = 0 # タイムスタンプを検査する階層の深さ
+
+} else {
+    [System.UInt32]$uint32_ScanDepth = $Depth # タイムスタンプを検査する階層の深さ
+}
+
 #todo 削除
 Write-Host $DirInfo
-Write-Host $Depth
+Write-Host $uint32_ScanDepth
 
 # 検索対象となる `System.IO.FileInfo` オブジェクトリストを作成
-$obj_finfos = 
-    Get-ChildItem -Path $DirInfo -Recurse | # `System.IO.FileInfo` オブジェクトリストを取得
+$obj_FofDInfos = 
+    Get-ChildItem -Path $DirInfo -Recurse -Depth $uint32_ScanDepth | # `System.IO.FileInfo` オブジェクトリストを取得
     Sort-Object -Property FullName # フルパスの名称で sort
+#todo ファイル指定は `-File` https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-childitem?view=powershell-7.4#-file
+# ディレクトリ指定は `-Directory` https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-childitem?view=powershell-7.4#-directory
+#隠しファイルも取得したい
+
 
 # 対象件数が 0 だった場合は終了
-if ($obj_finfos -eq $null){ # 対象件数が 0 だった場合
+if ($obj_FofDInfos -eq $null){ # 対象件数が 0 だった場合
     Write-Error "パス `"$DirInfo`" が存在しないか、その配下に子項目が存在しません。"
     exit 1
     # Note:
@@ -81,9 +98,9 @@ if ($obj_finfos -eq $null){ # 対象件数が 0 だった場合
     # `return` を使用するとコマンドプロンプトに値が表示されてしまう
 }
 
-for ($int_idx = 0 ; $int_idx -lt $obj_finfos.count ; $int_idx++){
+for ($int32_Idx = 0 ; $int32_Idx -lt $obj_FofDInfos.count ; $int32_Idx++){
     
-    Write-Host "($($int_idx + 1) of $($obj_finfos.count)) $($obj_finfos[$int_idx].FullName)"
-    Write-Host $obj_finfos[$int_idx].GetType().FullName
+    Write-Host "($($int32_Idx + 1) of $($obj_FofDInfos.count)) $($obj_FofDInfos[$int32_Idx].FullName)"
+    Write-Host $obj_FofDInfos[$int32_Idx].GetType().FullName
 
 }
