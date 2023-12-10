@@ -1,4 +1,23 @@
-﻿# <CAUTION!>
+﻿# <License>------------------------------------------------------------
+
+#  Copyright (c) 2023 Shinnosuke Yakenohara
+
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# -----------------------------------------------------------</License>
+
+# <CAUTION!>
 # このファイルは UTF-8 (BOM 付き) で保存すること。(ターミナルに日本語メッセージを表示するため)
 # </CAUTION!>
 
@@ -16,29 +35,21 @@
 # https://learn.microsoft.com/ja-jp/previous-versions/windows/powershell-scripting/hh847834(v=wps.640)?redirectedfrom=MSDN#parameter-%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%BC%E5%90%8D
 
 Param(
-    $DirInfo
+    [ValidateScript({
+        if (($_ -ne $null ) -and ($_ -isnot [System.String]) -and ($_ -isnot [System.IO.DirectoryInfo])){ # 型は
+            return $false
+        } else {
+            return $true
+        }
+    })]$DirInfo
 )
 
 
 if ($DirInfo -eq $null) { # 指定されなかった場合
-    Write-Error
-    exit 1
-    # Note:
-    # `return` は使用しない。バッチファイルから call される想定のため。
-    # `%errorlevel%` で取得可能な値しか返さない(`0` or `1` しか使えない仕様?)
-    # `return` を使用するとコマンドプロンプトに値が表示されてしまう
-
-} elseif ($DirInfo -is [System.String]){ # 文字列の場合
-    # Note: `.GetType().FullName -eq "System.String"` でも判定できるが、将来 `.FullName` で取得できる名前が変わっても通用するように、 ` -is [(データ型)]` で比較する
-
-    # Nothing todo
+    $DirInfo = $PSScriptRoot # この .ps1 ファイルが配置されたディレクトリを指定。文字列型。(`Get-ChildItem` のオプション `-Path` が文字列型である必要があるため)
 
 } elseif ($DirInfo -is [System.IO.DirectoryInfo]) { # ディレクトリオブジェクトの指定の場合
     $DirInfo = $DirInfo.FullName # パス文字列に変換 (`Get-ChildItem` のオプション `-Path` が文字列型である必要があるため)
-
-} else {
-    Write-Error
-    return 1
 }
 
 # 検索対象となる `System.IO.FileInfo` オブジェクトリストを作成
@@ -48,8 +59,12 @@ $obj_finfos =
 
 # 対象件数が 0 だった場合は終了
 if ($obj_finfos -eq $null){ # 対象件数が 0 だった場合
-    Write-Error "パス `"$DirInfo`" 内に子項目が存在しません。"
-    return
+    Write-Error "パス `"$DirInfo`" が存在しないか、その配下に子項目が存在しません。"
+    exit 1
+    # Note:
+    # `return` は使用しない。バッチファイルから call される想定のため。
+    # `%errorlevel%` で取得可能な値しか返さない(`0` or `1` しか使えない仕様?)
+    # `return` を使用するとコマンドプロンプトに値が表示されてしまう
 }
 
 for ($int_idx = 0 ; $int_idx -lt $obj_finfos.count ; $int_idx++){
