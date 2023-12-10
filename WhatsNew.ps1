@@ -81,11 +81,10 @@ Write-Host $uint32_ScanDepth
 
 # 検索対象となる `System.IO.FileInfo` オブジェクトリストを作成
 $obj_FofDInfos = 
-    Get-ChildItem -Path $DirInfo -Recurse -Depth $uint32_ScanDepth | # `System.IO.FileInfo` オブジェクトリストを取得
+    Get-ChildItem -Path $DirInfo -Recurse -Depth $uint32_ScanDepth -Force | # `System.IO.FileInfo` オブジェクトリストを取得
     Sort-Object -Property FullName # フルパスの名称で sort
 #todo ファイル指定は `-File` https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-childitem?view=powershell-7.4#-file
 # ディレクトリ指定は `-Directory` https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-childitem?view=powershell-7.4#-directory
-#隠しファイルも取得したい
 
 
 # 対象件数が 0 だった場合は終了
