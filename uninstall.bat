@@ -111,7 +111,7 @@ rmdir /s /q "%str_dirInstalled%" > nul 2>&1
 :: 削除に失敗しても `%errorlevel%` が `0` 以外にならない？ Windows の仕様？？
 :: 削除に失敗したかどうかは削除したはずのディレクトリが依然存在するかどうかで判断する
 if exist "%str_dirInstalled%" (
-    echo アンインストール失敗。インストール先フォルダ ^("%str_dirInstalled%"^) が削除できません。フォルダが他のプロセスに掴まれている可能性があります。手動て削除してください。
+    echo アンインストール失敗。インストール先フォルダー ^("%str_dirInstalled%"^) が削除できません。フォルダーが他のプロセスに掴まれている可能性があります。手動て削除してください。
     explorer.exe /e,/select,"%str_dirInstalled%"
     pause
     exit /b 1

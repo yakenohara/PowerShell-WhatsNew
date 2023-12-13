@@ -38,8 +38,8 @@ if (-not (Test-Path $str_path)) {
 # エクスプローラーで表示
 # Note
 # なぜか `/n` を付与しないと explorer が最前面に現れない
-if ((Get-Item $str_path).PSIsContainer) { # パスがフォルダの場合
-    Start-Process explorer "/n, `"$str_path`"" # フォルダを開く
+if ((Get-Item $str_path).PSIsContainer) { # パスがフォルダーの場合
+    Start-Process explorer "/n, `"$str_path`"" # フォルダーを開く
 } else { # パスがファイルの場合
     Start-Process explorer "/n,/select,`"$str_path`"" # ファイルを選択した状態でエクスプローラーを開く
 }

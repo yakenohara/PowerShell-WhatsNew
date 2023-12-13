@@ -38,7 +38,7 @@ chcp 932 > nul
 :: カスタム URI スキーム名
 set str_schemeName=kickexplorer
 
-:: インストールフォルダ名
+:: インストールフォルダー名
 set str_folderNameToInstall=kickexplorer
 
 :: カスタム URI スキームで起動されるアプリ名
@@ -50,7 +50,7 @@ set str_regKeyPath="HKEY_CLASSES_ROOT\%str_schemeName%"
 :: レジストリエントリ登録先親パス
 set str_regPath="HKEY_CLASSES_ROOT\%str_schemeName%\shell\open\command"
 
-:: フォルダ選択ダイアログで `キャンセル` されたかどうかを判断するための評価文字列
+:: フォルダー選択ダイアログで `キャンセル` されたかどうかを判断するための評価文字列
 set "str_canceled=ECHO は <OFF> です。"
 
 :: Progress 表示用変数定義
@@ -59,8 +59,8 @@ set /a int_progOfSpes=1
 
 echo Installing...
 
-:: インストール先フォルダ選択ダイアログ
-set "Title=インストール先フォルダを選択してください"
+:: インストール先フォルダー選択ダイアログ
+set "Title=インストール先フォルダーを選択してください"
 set dialog="about:<script language=vbscript>resizeTo 0,0:Sub window_onload():
 set dialog=%dialog%Set Shell=CreateObject("Shell.Application"):
 set dialog=%dialog%Set Env=CreateObject("WScript.Shell").Environment("Process"):
@@ -81,10 +81,10 @@ if "%str_toInstallDir%"=="%str_canceled%" (
 )
 :: echo %str_toInstallDir%
 
-:: インストール先フォルダチェック
+:: インストール先フォルダーチェック
 echo (%int_progOfSpes%of%int_totalSped%) Checking existence of specified folder ("%str_toInstallDir%\%str_folderNameToInstall%")
 if not exist "%str_toInstallDir%" (
-    echo インストール失敗。選択したフォルダが存在しません。
+    echo インストール失敗。選択したフォルダーが存在しません。
     pause
     exit /b 1
 )
