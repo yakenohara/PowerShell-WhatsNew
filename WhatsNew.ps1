@@ -35,7 +35,15 @@
     `0` の場合は、走査対象ディレクトリ直下、
     `-1` の場合は、走査対象ディレクトリが配置された階層、
     `-2` の場合は、走査対象ディレクトリの 1 階層上を意味します。
+
+    .PARAMETER FileOnly
+    走査対象をファイルに限定します (デフォルト: $false)
+
+    .PARAMETER DirectoryOnly
+    走査対象をにディレクトリ限定します (デフォルト: $false)
+
 #>
+
 # Note:
 # '.PARAMETER <パラメーター名>' で使用する "<パラメーター名>" は、アッパーキャメルケースを使用しないと `Get-Help <スクリプトファイル> -full` 実行時にうまく認識されないらしい
 # https://learn.microsoft.com/ja-jp/previous-versions/windows/powershell-scripting/hh847834(v=wps.640)?redirectedfrom=MSDN#parameter-%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%83%BC%E5%90%8D
@@ -51,7 +59,13 @@ Param(
     })]$DirInfo,
 
     # 階層の深さ
-    [System.Int32]$Depth = 0 # 型は signed int (32bit) でないといけない
+    [System.Int32]$Depth = 0, # 型は signed int (32bit) でないといけない
+
+    # ファイル限定指定
+    [switch]$FileOnly,
+
+    # フォルダー限定指定
+    [switch]$DirectoryOnly
 )
 
 # <引数チェック>
@@ -60,6 +74,16 @@ if ($DirInfo -eq $null) { # 指定されなかった場合
 
 } elseif ($DirInfo -is [System.IO.DirectoryInfo]) { # ディレクトリオブジェクトの指定の場合
     [System.String]$DirInfo = $DirInfo.FullName # パス文字列に変換 (`Get-ChildItem` のオプション `-Path` が文字列型である必要があるため)
+}
+if ($FileOnly) { # 走査対象をファイルに限定している場合
+    $str_FileOpt = " -File"
+} else {
+    $str_FileOpt = ""
+}
+if ($DirectoryOnly) { # 走査対象をファイルに限定している場合
+    $str_DirOpt = " -Directory"
+} else {
+    $str_DirOpt = ""
 }
 # </引数チェック>
 
@@ -80,8 +104,12 @@ Write-Host $DirInfo
 Write-Host $uint32_ScanDepth
 
 # 検索対象となる `System.IO.FileInfo` オブジェクトリストを作成
-$obj_FofDInfos = 
-    Get-ChildItem -Path $DirInfo -Recurse -Depth $uint32_ScanDepth -Force | # `System.IO.FileInfo` オブジェクトリストを取得
+$str_GetChildItemCmdlet = "Get-ChildItem -Path `"$DirInfo`"$str_FileOpt$str_DirOpt -Recurse -Depth $uint32_ScanDepth -Force"
+
+#todo 削除
+Write-Host $str_GetChildItemCmdlet
+
+$obj_FofDInfos = Invoke-Expression $str_GetChildItemCmdlet | # `System.IO.FileInfo` オブジェクトリストを取得
     Sort-Object -Property FullName # フルパスの名称で sort
 #todo ファイル指定は `-File` https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-childitem?view=powershell-7.4#-file
 # ディレクトリ指定は `-Directory` https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-childitem?view=powershell-7.4#-directory
@@ -97,9 +125,20 @@ if ($obj_FofDInfos -eq $null){ # 対象件数が 0 だった場合
     # `return` を使用するとコマンドプロンプトに値が表示されてしまう
 }
 
+[System.Management.Automation.PathInfo]$obj_Curdir = Get-Location # カレントディレクトリを一時保存
+Set-Location $DirInfo # 相対パスを取得するためにカレントディレクトリを指定ディレクトリに移動
+
 for ($int32_Idx = 0 ; $int32_Idx -lt $obj_FofDInfos.count ; $int32_Idx++){
     
-    Write-Host "($($int32_Idx + 1) of $($obj_FofDInfos.count)) $($obj_FofDInfos[$int32_Idx].FullName)"
-    Write-Host $obj_FofDInfos[$int32_Idx].GetType().FullName
+    # Write-Host "($($int32_Idx + 1) of $($obj_FofDInfos.count)) $($obj_FofDInfos[$int32_Idx].FullName)"
+    # Write-Host $obj_FofDInfos[$int32_Idx].GetType().FullName
+    [System.String]$str_RelPath = Resolve-Path -Path $obj_FofDInfos[$int32_Idx].FullName -Relative # カレントディレクトリからの相対パスを取得
+
+    # https://learn.microsoft.com/ja-jp/dotnet/api/system.text.regularexpressions.regex.matches?view=net-8.0#system-text-regularexpressions-regex-matches(system-string-system-string)
+    if (([regex]::Matches($str_RelPath, '\\')).Count -eq $uint32_ScanDepth){
+        Write-Host $str_RelPath
+    }
 
 }
+
+Set-Location $obj_Curdir # カレントディレクトリをもとに戻す
