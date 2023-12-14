@@ -130,6 +130,8 @@ if ($obj_FofDInfos -eq $null){ # 対象件数が 0 だった場合
     # `return` を使用するとコマンドプロンプトに値が表示されてしまう
 }
 
+$obj_PathInfo = New-Object System.Collections.ArrayList
+
 [System.Management.Automation.PathInfo]$obj_Curdir = Get-Location # カレントディレクトリを一時保存
 Set-Location $DirInfo # 相対パスを取得するためにカレントディレクトリを指定ディレクトリに移動
 
@@ -161,26 +163,51 @@ for ($int32_Idx = 0 ; $int32_Idx -lt $obj_FofDInfos.count ; $int32_Idx++){
 
                     # 現在のディレクトリのタイムスタンプより小項目のタイムスタンプが新しい場合
                     if (0 -lt (New-TimeSpan -Start $obj_FofDInfos[$int32_Idx].LastWriteTime -End $obj_FofDInfosForTime[0].LastWriteTime).TotalMilliseconds) {
-                        Write-Host $obj_FofDInfos[$int32_Idx].Fullname + $obj_FofDInfosForTime[0].LastWriteTime
+                        # Write-Host $obj_FofDInfos[$int32_Idx].Fullname + $obj_FofDInfosForTime[0].LastWriteTime
+                        $obj_PathInfo.Add([PSCustomObject]@{
+                            PathName = $obj_FofDInfos[$int32_Idx].Fullname
+                            LastWriteTime = $obj_FofDInfosForTime[0].LastWriteTime
+                        }) > $null
 
                     }else{ # 現在のディレクトリのタイムスタンプが小項目のタイムスタンプが新しい場合
-                        Write-Host $obj_FofDInfos[$int32_Idx].Fullname + $obj_FofDInfos[$int32_Idx].LastWriteTime
+                        # Write-Host $obj_FofDInfos[$int32_Idx].Fullname + $obj_FofDInfos[$int32_Idx].LastWriteTime
+                        $obj_PathInfo.Add([PSCustomObject]@{
+                            PathName = $obj_FofDInfos[$int32_Idx].Fullname
+                            LastWriteTime = $obj_FofDInfos[$int32_Idx].LastWriteTime
+                        }) > $null
                     }
 
-                } else {
-                    Write-Host $obj_FofDInfos[$int32_Idx].Fullname + $obj_FofDInfos[$int32_Idx].LastWriteTime
+                } else { # 小項目が存在しない場合
+                    # Write-Host $obj_FofDInfos[$int32_Idx].Fullname + $obj_FofDInfos[$int32_Idx].LastWriteTime
+                    $obj_PathInfo.Add([PSCustomObject]@{
+                        PathName = $obj_FofDInfos[$int32_Idx].Fullname
+                        LastWriteTime = $obj_FofDInfos[$int32_Idx].LastWriteTime
+                    }) > $null
                 }
 
             } else { # ファイルの場合
-                Write-Host $obj_FofDInfos[$int32_Idx].Fullname + $obj_FofDInfos[$int32_Idx].LastWriteTime
+                # Write-Host $obj_FofDInfos[$int32_Idx].Fullname + $obj_FofDInfos[$int32_Idx].LastWriteTime
+                $obj_PathInfo.Add([PSCustomObject]@{
+                    PathName = $obj_FofDInfos[$int32_Idx].Fullname
+                    LastWriteTime = $obj_FofDInfos[$int32_Idx].LastWriteTime
+                }) > $null
 
             }
 
         } else { # `-TimeDepth` パラメータが指定されていない場合
-            Write-Host $obj_FofDInfos[$int32_Idx].Fullname + $obj_FofDInfos[$int32_Idx].LastWriteTime
+            # Write-Host $obj_FofDInfos[$int32_Idx].Fullname + $obj_FofDInfos[$int32_Idx].LastWriteTime
+            $obj_PathInfo.Add([PSCustomObject]@{
+                PathName = $obj_FofDInfos[$int32_Idx].Fullname
+                LastWriteTime = $obj_FofDInfos[$int32_Idx].LastWriteTime
+            }) > $null
         }
     }
 
 }
 
 Set-Location $obj_Curdir # カレントディレクトリをもとに戻す
+
+$obj_SortedPathInfo = $obj_PathInfo | Sort-Object -Property LastWriteTime -Descending # 降順にソート
+for ($int32_Idx = 0 ; $int32_Idx -lt $obj_SortedPathInfo.count ; $int32_Idx++){
+    Write-Host $obj_SortedPathInfo[$int32_Idx].PathName $obj_SortedPathInfo[$int32_Idx].LastWriteTime
+}
