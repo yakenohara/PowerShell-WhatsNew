@@ -21,6 +21,14 @@
 
 :: <User Setting>------------------------------------------------------
 
+:: 走査対象フォルダー
+::     フルパスで指定します。
+::     `folderPath=` の直後から記載します。 (`=` の直後にスペースは入れません)
+::     パス名にスペースが含まれる場合でもそのまま記載します。
+::      (e.g. `set folderPath=C:\Users\myname\s p a c e`)
+::     デフォルト `%~dp0%` はこのバッチファイルが配置されたディレクトリ
+set folderPath=%~dp0%
+
 :: 走査する階層の深さ
 ::     例えば、"D:\test" の配下の "D:\test\xxx\yyy" が配置された階層に対して走査したい場合、`1` を指定します。
 ::     `0` の場合は、走査対象ディレクトリ直下、
@@ -34,13 +42,10 @@ set /a depth=1
 ::     '走査する深さ' より小さい値の場合は、走査対象のディレクトリのタイムスタンプはそのすべての子要素とディレクトリそのものの中から最新のタイムスタンプを使用します。
 set /a timedepth=0
 
-:: 走査対象フォルダー
-::     フルパスで指定します。
-::     `folderPath=` の直後から記載します。 (`=` の直後にスペースは入れません)
-::     パス名にスペースが含まれる場合でもそのまま記載します。
-::      (e.g. `set folderPath=C:\Users\myname\s p a c e`)
-::     デフォルト `%~dp0%` はこのバッチファイルが配置されたディレクトリ
-set folderPath=%~dp0%
+:: 出力先 .html パス名
+::     デフォルトは、このバッチファイルが配置されたディレクトリ\WhatsNew.html
+::set outPath=%~dp0wWhats-new.html
+set outPath=%~dp0%whats-new.html
 
 :: -----------------------------------------------------</User Setting>
 
@@ -71,4 +76,4 @@ echo %folderPath%|findstr \\$ >nul && set folderPath=%folderPath:~0,-1%
 :: 終端の `"` に対するエスケープ `\` は 2 文字記載しないといけない
 :: `powershell` コマンドへの引数内部で変数展開したいので `Bypass` 以降の文字列を `"` で括っているが、
 :: この内部で `"` を使用するためには、 `\` でエスケープしなければならない。 <- それをさらにエスケープするため？
-powershell -ExecutionPolicy Bypass "& \"%ps1FileFullPath%\" -DirInfo \"%folderPath%\" -Depth %depth% -TimeDepth %timedepth%"
+powershell -ExecutionPolicy Bypass "& \"%ps1FileFullPath%\" -DirInfo \"%folderPath%\" -Depth %depth% -TimeDepth %timedepth% -OutFilePath %outPath%"

@@ -47,6 +47,9 @@
     .PARAMETER DirectoryOnly
     走査対象をにディレクトリ限定します (デフォルト: $false)
 
+    .PARAMETER OutFilePath
+    出力する .html ファイルパス (デフォルト: 'カレントディレクトリ'\whats-new.html)
+
 #>
 
 # Note:
@@ -77,7 +80,11 @@ Param(
     [switch]$FileOnly,
 
     # フォルダー限定指定
-    [switch]$DirectoryOnly
+    [switch]$DirectoryOnly,
+
+    # 出力する .html ファイルパス
+    [System.String]$OutFilePath
+
 )
 
 # <引数チェック>
@@ -99,6 +106,21 @@ if ($DirectoryOnly) { # 走査対象をファイルに限定している場合
     $str_DirOpt = " -Directory"
 } else {
     $str_DirOpt = ""
+}
+if ($OutFilePath -eq $null) { # 出力する .html ファイルパスが指定されなかった場合
+    # 'カレントディレクトリ'\whats-new.html
+    $str_OutFilePath = (Get-Location).Path + '\WhatsNew.html'
+} else { # 出力する .html ファイルパスが指定されている場合
+    $str_tmp = Split-Path $OutFilePath
+    if (-Not(Test-Path $str_tmp)) { # 指定パスの親ディレクトリが存在しない場合
+        Write-Error "フォルダ `"$str_tmp`" が存在しません。"
+        exit 1
+        # Note:
+        # `return` は使用しない。バッチファイルから call される想定のため。
+        # `%errorlevel%` で取得可能な値しか返さない(`0` or `1` しか使えない仕様?)
+        # `return` を使用するとコマンドプロンプトに値が表示されてしまう
+    }
+    $str_OutFilePath = (Resolve-Path $str_tmp).Path + '\' + (Split-Path $OutFilePath -Leaf)
 }
 # </引数チェック>
 
@@ -124,10 +146,6 @@ $obj_FofDInfos = Invoke-Expression $str_GetChildItemCmdlet | # `System.IO.FileIn
 if ($obj_FofDInfos -eq $null){ # 対象件数が 0 だった場合
     Write-Error "パス `"$DirInfo`" が存在しないか、その配下に子項目が存在しません。"
     exit 1
-    # Note:
-    # `return` は使用しない。バッチファイルから call される想定のため。
-    # `%errorlevel%` で取得可能な値しか返さない(`0` or `1` しか使えない仕様?)
-    # `return` を使用するとコマンドプロンプトに値が表示されてしまう
 }
 
 $obj_PathInfo = New-Object System.Collections.ArrayList
@@ -210,7 +228,6 @@ Set-Location $obj_Curdir # カレントディレクトリをもとに戻す
 $obj_SortedPathInfo = $obj_PathInfo | Sort-Object -Property LastWriteTime -Descending # 降順にソート
 
 # 出力先ファイル StreamWriter を開く
-$str_OutFilePath = $obj_Curdir.Path + '\WhatsNew.html'
 try{
     $enc_obj = [Text.Encoding]::GetEncoding('utf-8')
     
