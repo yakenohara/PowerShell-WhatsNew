@@ -208,6 +208,65 @@ for ($int32_Idx = 0 ; $int32_Idx -lt $obj_FofDInfos.count ; $int32_Idx++){
 Set-Location $obj_Curdir # カレントディレクトリをもとに戻す
 
 $obj_SortedPathInfo = $obj_PathInfo | Sort-Object -Property LastWriteTime -Descending # 降順にソート
-for ($int32_Idx = 0 ; $int32_Idx -lt $obj_SortedPathInfo.count ; $int32_Idx++){
-    Write-Host $obj_SortedPathInfo[$int32_Idx].PathName $obj_SortedPathInfo[$int32_Idx].LastWriteTime
+
+# 出力先ファイル StreamWriter を開く
+$str_OutFilePath = $obj_Curdir.Path + '\WhatsNew.html'
+try{
+    $enc_obj = [Text.Encoding]::GetEncoding('utf-8')
+    
+    if ($enc_obj.CodePage -eq 65001){ # for utf-8 encoding with no BOM
+        $outFileWriter = New-Object System.IO.StreamWriter($str_OutFilePath, $false)
+        
+    } else {
+        $outFileWriter = New-Object System.IO.StreamWriter($str_OutFilePath, $false, $enc_obj)
+    }
+    
+} catch { # 出力先ファイル StreamWriter を開けなかった場合
+    Write-Error ("[error] " + $_.Exception.Message)
+    try{
+        $outFileWriter.Close()
+    } catch {}
+    exit 1
 }
+
+# HTML ヘッダの書き込み
+$outFileWriter.WriteLine(@'
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+        <title>Todo タイトル</title>
+    </head>
+    <body>
+'@)
+
+# <table> ヘッダの書き込み
+$outFileWriter.WriteLine(@'
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>パス</th><th>日付</th>
+                </tr>
+                </thead>
+            <tbody>
+'@)
+
+for ($int32_Idx = 0 ; $int32_Idx -lt $obj_SortedPathInfo.count ; $int32_Idx++){
+    # Write-Host $obj_SortedPathInfo[$int32_Idx].PathName $obj_SortedPathInfo[$int32_Idx].LastWriteTime
+    $outFileWriter.WriteLine('                <tr><td>' + $obj_SortedPathInfo[$int32_Idx].PathName + '</td><td></td><tr>')
+}
+
+# <table> 要素の終了
+$outFileWriter.WriteLine(@'
+            </tbody>
+        </table>
+'@)
+
+# HTML の終了
+$outFileWriter.WriteLine(@'
+    </body>
+</html>
+'@)
+
+# file close
+$outFileWriter.Close()
