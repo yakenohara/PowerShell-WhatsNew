@@ -270,7 +270,7 @@ $outFileWriter.WriteLine(@'
 
 for ($int32_Idx = 0 ; $int32_Idx -lt $obj_SortedPathInfo.count ; $int32_Idx++){
     # Write-Host $obj_SortedPathInfo[$int32_Idx].PathName $obj_SortedPathInfo[$int32_Idx].LastWriteTime
-    $outFileWriter.WriteLine('                <tr><td>' + $obj_SortedPathInfo[$int32_Idx].PathName + '</td><td></td><tr>')
+    $outFileWriter.WriteLine('                <tr><td><a href="kickexplorer:' + $obj_SortedPathInfo[$int32_Idx].PathName + '">' + $obj_SortedPathInfo[$int32_Idx].PathName + '</a></td><td></td><tr>')
 }
 
 # <table> 要素の終了
