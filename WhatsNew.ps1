@@ -262,15 +262,49 @@ $outFileWriter.WriteLine(@'
         <table border="1">
             <thead>
                 <tr>
-                    <th>パス</th><th>日付</th>
+                    <th>パス</th><th>更新日時(降順)</th>
                 </tr>
                 </thead>
             <tbody>
 '@)
 
+# [DateTime.ToString()](https://learn.microsoft.com/ja-jp/dotnet/api/system.datetime.tostring?view=net-8.0#system-datetime-tostring(system-string-system-iformatprovider)) へ渡す
+# `IFormatProvider` パラメータの生成
+$str_CultureName = (Get-Culture).Name # OS の現在のカルチャ設定を取得
+if ($str_CultureName -eq 'ja-JP') { # '日本' 設定の場合
+    $obj_Culture = New-Object CultureInfo($str_CultureName)
+    $obj_Culture.DateTimeFormat.Calendar = New-Object System.Globalization.JapaneseCalendar
+    
+} else { # OS の現在のカルチャ設定が '日本' 以外の場合
+    $obj_Culture = $null
+    
+}
+
 for ($int32_Idx = 0 ; $int32_Idx -lt $obj_SortedPathInfo.count ; $int32_Idx++){
     # Write-Host $obj_SortedPathInfo[$int32_Idx].PathName $obj_SortedPathInfo[$int32_Idx].LastWriteTime
-    $outFileWriter.WriteLine('                <tr><td><a href="kickexplorer:' + $obj_SortedPathInfo[$int32_Idx].PathName + '">' + $obj_SortedPathInfo[$int32_Idx].PathName + '</a></td><td></td><tr>')
+
+    if ($obj_Culture -eq $null){ # OS の現在のカルチャ設定が '日本' 以外の場合
+        $str_EraAndYY = ''
+    } else {
+        # 和暦を "(令和XX年)" のように設定
+        $str_EraAndYY = '(' + $obj_SortedPathInfo[$int32_Idx].LastWriteTime.ToString("gyy年", $obj_Culture) + ')'
+    }
+
+    $outFileWriter.WriteLine(
+        '                <tr><td><a href="kickexplorer:' +
+        $obj_SortedPathInfo[$int32_Idx].PathName + # カスタム URI へ渡すパラメータ文字列
+        '">' +
+        $obj_SortedPathInfo[$int32_Idx].PathName + # ブラウザ表示用パス文字列
+        '</a></td><td><time datetime="' +
+        $obj_SortedPathInfo[$int32_Idx].LastWriteTime.ToString("yyyy-MM-ddTHH:mm:ss.fff") + # `datetime` 属性値
+        '">' +
+        $obj_SortedPathInfo[$int32_Idx].LastWriteTime.ToString("yyyy年") + $str_EraAndYY + $obj_SortedPathInfo[$int32_Idx].LastWriteTime.ToString("MM月dd日(ddd)、HH:mm:ss.fff") + # ブラウザ表示日時
+        '</time>' +
+        '</td><tr>'
+    )
+    # `datetime` 属性には [ローカル日時文字列](https://developer.mozilla.org/ja/docs/Web/HTML/Date_and_time_formats#%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%AB%E6%97%A5%E6%99%82%E6%96%87%E5%AD%97%E5%88%97) を使用する
+    # 書式指定文字列の意味は以下参照
+    # https://learn.microsoft.com/ja-jp/dotnet/standard/base-types/custom-date-and-time-format-strings?WT.mc_id=WD-MVP-36880
 }
 
 # <table> 要素の終了
