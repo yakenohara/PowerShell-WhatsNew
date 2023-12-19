@@ -68,6 +68,8 @@ Param(
 
     # 階層の深さ
     [System.Int32]$Depth = 0, # 型は signed int (32bit) でないといけない
+
+    # タイムスタンプを取得する深さ
     [ValidateScript({
         if (($_ -ne $null ) -and ($_ -isnot [System.Int32])){ # 型は signed int (32bit) でないといけない
             
@@ -102,11 +104,19 @@ Param(
 # 
 # カスタム URI でパーセントエンコードしてくれない文字のみパーセントエンコードする
 Function func_PercentEncodeForSpecialChar($str_ReplaceFrom) {
-    return ($str_ReplaceFrom -replace '&','%26')
+    
+    $str_ReplaceFrom = ($str_ReplaceFrom -replace '%','%25') # 後の処理で変換後文字列に `%` を含む可能性があるので、1番最初に行う
+
+    $str_ReplaceFrom = ($str_ReplaceFrom -replace '&','%26')
     # Note
     # `&` はブラウザ -> カスタム URI へ渡す時にエスケープしてくれないようなので、ここで実施
-    # エスケープしないと、バッチファイル内で カスタム URI 経由で渡ってきた引数文字列にそのまま `&` が這入ってしまうので、
+    # エスケープしないと、バッチファイル内で カスタム URI 経由で渡ってきた引数文字列にそのまま `&` が入ってしまうので、
     # `%~1` による引数展開時に `認識されていません。` となってしまう
+
+    $str_ReplaceFrom = ($str_ReplaceFrom -replace '\+','%2B')
+    $str_ReplaceFrom = ($str_ReplaceFrom -replace ' ','+')
+
+    return $str_ReplaceFrom
 }
 
 # <引数チェック>
