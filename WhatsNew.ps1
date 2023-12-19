@@ -98,6 +98,17 @@ Param(
 
 )
 
+# 共通関数
+# 
+# カスタム URI でパーセントエンコードしてくれない文字のみパーセントエンコードする
+Function func_PercentEncodeForSpecialChar($str_ReplaceFrom) {
+    return ($str_ReplaceFrom -replace '&','%26')
+    # Note
+    # `&` はブラウザ -> カスタム URI へ渡す時にエスケープしてくれないようなので、ここで実施
+    # エスケープしないと、バッチファイル内で カスタム URI 経由で渡ってきた引数文字列にそのまま `&` が這入ってしまうので、
+    # `%~1` による引数展開時に `認識されていません。` となってしまう
+}
+
 # <引数チェック>
 if ($DirInfo -eq $null) { # `-DirInfo` が指定されなかった場合
     [System.String]$DirInfo = $PSScriptRoot # この .ps1 ファイルが配置されたディレクトリを指定。文字列型。(`Get-ChildItem` のオプション `-Path` が文字列型である必要があるため)
@@ -122,7 +133,7 @@ if ($DirectoryOnly) { # 走査対象をファイルに限定している場合
 }
 if ($OutFilePath -eq $null) { # 出力する .html ファイルパスが指定されなかった場合
     # 'カレントディレクトリ'\whats-new.html
-    $str_OutFilePath = (Get-Location).Path + '\WhatsNew.html'
+    $str_OutFilePath = (Get-Location).Path + '\whats-new.html'
 } else { # 出力する .html ファイルパスが指定されている場合
     $str_tmp = Split-Path $OutFilePath
     if (-Not(Test-Path $str_tmp)) { # 指定パスの親ディレクトリが存在しない場合
@@ -315,7 +326,7 @@ for ($int32_Idx = 0 ; $int32_Idx -lt $obj_SortedPathInfo.count ; $int32_Idx++){
         $str_CstmURIForChild =
             ' ' +
             '<a href="kickexplorer:' +
-            $obj_SortedPathInfo[$int32_Idx].ChildPathName + # カスタム URI へ渡すパラメータ文字列
+            (func_PercentEncodeForSpecialChar($obj_SortedPathInfo[$int32_Idx].ChildPathName)) + # カスタム URI へ渡すパラメータ文字列
             '">(' +
             $str_RelPath + # ブラウザ表示用パス文字列
             ')</a>'
@@ -323,7 +334,7 @@ for ($int32_Idx = 0 ; $int32_Idx -lt $obj_SortedPathInfo.count ; $int32_Idx++){
 
     $outFileWriter.WriteLine(
         '                <tr><td><a href="kickexplorer:' +
-        $obj_SortedPathInfo[$int32_Idx].PathName + # カスタム URI へ渡すパラメータ文字列
+        (func_PercentEncodeForSpecialChar($obj_SortedPathInfo[$int32_Idx].PathName)) + # カスタム URI へ渡すパラメータ文字列
         '">' +
         $obj_SortedPathInfo[$int32_Idx].PathName + # ブラウザ表示用パス文字列
         '</a></td><td><time datetime="' +

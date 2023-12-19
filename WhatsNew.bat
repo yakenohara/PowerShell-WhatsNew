@@ -78,7 +78,11 @@ echo %folderPath%|findstr \\$ >nul && set folderPath=%folderPath:~0,-1%
 :: この内部で `"` を使用するためには、 `\` でエスケープしなければならない。 <- それをさらにエスケープするため？
 powershell -ExecutionPolicy Bypass "& \"%ps1FileFullPath%\" -DirInfo \"%folderPath%\" -Depth %depth% -TimeDepth %timedepth% -OutFilePath %outPath%"
 
+:: errorlevel 判定
 if %errorlevel% neq 0 (
     pause
     exit /b 1
 )
+
+:: errorlevel == 0 の場合、システムデフォルトのアプリで .html ファイルを開く
+%outPath%
