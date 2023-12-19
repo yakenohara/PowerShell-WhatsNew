@@ -70,8 +70,19 @@ Param(
     [System.Int32]$Depth = 0, # 型は signed int (32bit) でないといけない
     [ValidateScript({
         if (($_ -ne $null ) -and ($_ -isnot [System.Int32])){ # 型は signed int (32bit) でないといけない
-            return $false
-        } else {
+            
+            # `System.Int32` 型にキャスト可能かどうか検査 (バッチファイルでマイナス値を指定した場合は `System.String` 型となるため)
+            try {
+                [System.Int32]$_
+            } catch { # キャスト失敗の場合
+                Write-Error $_.Exception.Message
+                return $false
+            }
+
+            # キャスト成功の場合
+            return $true
+
+        } else { # 型は signed int (32bit) もしくは null の場合
             return $true
         }
     })]$TimeDepth,
@@ -96,6 +107,8 @@ if ($DirInfo -eq $null) { # `-DirInfo` が指定されなかった場合
 }
 if ($TimeDepth -eq $null){ # `-TimeDepth` が指定されなかった場合
     $TimeDepth = $Depth # `-Depth` と同じ値を使用
+} else { # `-TimeDepth` が指定された場合
+    $TimeDepth = [System.Int32]$TimeDepth # `System.Int32` 型にキャスト (バッチファイルでマイナス値を指定した場合は `System.String` 型となるため)
 }
 if ($FileOnly) { # 走査対象をファイルに限定している場合
     $str_FileOpt = " -File"
