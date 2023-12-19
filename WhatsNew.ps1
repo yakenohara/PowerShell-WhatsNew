@@ -185,6 +185,7 @@ for ($int32_Idx = 0 ; $int32_Idx -lt $obj_FofDInfos.count ; $int32_Idx++){
                         $obj_PathInfo.Add([PSCustomObject]@{
                             PathName = $obj_FofDInfos[$int32_Idx].Fullname
                             LastWriteTime = $obj_FofDInfosForTime[0].LastWriteTime
+                            ChildPathName = $obj_FofDInfosForTime[0].Fullname
                         }) > $null
 
                     }else{ # 現在のディレクトリのタイムスタンプが小項目のタイムスタンプが新しい場合
@@ -223,7 +224,7 @@ for ($int32_Idx = 0 ; $int32_Idx -lt $obj_FofDInfos.count ; $int32_Idx++){
 
 }
 
-Set-Location $obj_Curdir # カレントディレクトリをもとに戻す
+Set-Location $obj_Curdir # カレントディレクトリをもとに戻す (出力先ファイル StreamWriter のインスタンス生成失敗時のためにここで1度実行しておく)
 
 $obj_SortedPathInfo = $obj_PathInfo | Sort-Object -Property LastWriteTime -Descending # 降順にソート
 
@@ -290,6 +291,23 @@ for ($int32_Idx = 0 ; $int32_Idx -lt $obj_SortedPathInfo.count ; $int32_Idx++){
         $str_EraAndYY = '(' + $obj_SortedPathInfo[$int32_Idx].LastWriteTime.ToString("gyy年", $obj_Culture) + ')'
     }
 
+    If ($obj_SortedPathInfo[$int32_Idx].ChildPathName -eq $null) { # 子要素から 'LastWriteTime' を取得した場合
+        $str_CstmURIForChild = ''
+
+    } else { # 子要素から 'LastWriteTime' を取得していない場合
+
+        Set-Location $obj_SortedPathInfo[$int32_Idx].PathName # 相対パスを取得するためにカレントディレクトリを指定ディレクトリに移動
+        # Write-Host $obj_SortedPathInfo[$int32_Idx].ChildPathName
+        $str_RelPath = (Resolve-Path -Path $obj_SortedPathInfo[$int32_Idx].ChildPathName -Relative) -replace "^\.\\","" # 先頭の `.\` を削除
+        $str_CstmURIForChild =
+            ' ' +
+            '<a href="kickexplorer:' +
+            $obj_SortedPathInfo[$int32_Idx].ChildPathName + # カスタム URI へ渡すパラメータ文字列
+            '">(' +
+            $str_RelPath + # ブラウザ表示用パス文字列
+            ')</a>'
+    }
+
     $outFileWriter.WriteLine(
         '                <tr><td><a href="kickexplorer:' +
         $obj_SortedPathInfo[$int32_Idx].PathName + # カスタム URI へ渡すパラメータ文字列
@@ -300,12 +318,15 @@ for ($int32_Idx = 0 ; $int32_Idx -lt $obj_SortedPathInfo.count ; $int32_Idx++){
         '">' +
         $obj_SortedPathInfo[$int32_Idx].LastWriteTime.ToString("yyyy年") + $str_EraAndYY + $obj_SortedPathInfo[$int32_Idx].LastWriteTime.ToString("MM月dd日(ddd)、HH:mm:ss.fff") + # ブラウザ表示日時
         '</time>' +
+        $str_CstmURIForChild + 
         '</td><tr>'
     )
     # `datetime` 属性には [ローカル日時文字列](https://developer.mozilla.org/ja/docs/Web/HTML/Date_and_time_formats#%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%AB%E6%97%A5%E6%99%82%E6%96%87%E5%AD%97%E5%88%97) を使用する
     # 書式指定文字列の意味は以下参照
     # https://learn.microsoft.com/ja-jp/dotnet/standard/base-types/custom-date-and-time-format-strings?WT.mc_id=WD-MVP-36880
 }
+
+Set-Location $obj_Curdir # カレントディレクトリをもとに戻す
 
 # <table> 要素の終了
 $outFileWriter.WriteLine(@'
