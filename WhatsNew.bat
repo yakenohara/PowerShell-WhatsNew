@@ -77,3 +77,8 @@ echo %folderPath%|findstr \\$ >nul && set folderPath=%folderPath:~0,-1%
 :: `powershell` コマンドへの引数内部で変数展開したいので `Bypass` 以降の文字列を `"` で括っているが、
 :: この内部で `"` を使用するためには、 `\` でエスケープしなければならない。 <- それをさらにエスケープするため？
 powershell -ExecutionPolicy Bypass "& \"%ps1FileFullPath%\" -DirInfo \"%folderPath%\" -Depth %depth% -TimeDepth %timedepth% -OutFilePath %outPath%"
+
+if %errorlevel% neq 0 (
+    pause
+    exit /b 1
+)
