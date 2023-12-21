@@ -103,7 +103,7 @@ if %errorlevel% neq 0 (
 
 set /a int_progOfSpes=%int_progOfSpes%+1
 
-::todo インストールディレクトリの削除
+:: インストールディレクトリの削除
 echo (%int_progOfSpes%of%int_totalSped%) Uninstalling files
 :: https://learn.microsoft.com/ja-jp/windows-server/administration/windows-commands/rmdir
 rmdir /s /q "%str_dirInstalled%" > nul 2>&1

@@ -1,36 +1,42 @@
-# todo
-
- - パス文字列内の `+` がカスタム URI に渡る引数文字列で ` ` になってしまう
- - パス文字列内の ` ` 削除されてカスタム URI に渡る場合がある
-
 # What's this ?
+
+指定された深さに該当するディレクトリのみを探索し、ファイルエクスプローラーへのリンクを含んだ表をタイムスタンプ順 (降順) にソートして HTML ファイルに書き出します。  
+
+![](assets/images/readme01.svg)  
 
 # Install
 
+install.bat を '管理者として実行' します。(ディレクトリ探索 & HTML ファイル生成はインストールされていない環境でも動作しますが、HTML ファイル内のファイルエクスプローラーへのリンクを動作させるために必要です)  
+'インストール先フォルダーを選択してください' ダイアログで、任意のインストール先フォルダーを選択してください。 (アクセス権限の問題を回避するために、 `C:\Users\(ユーザー名)\Documents` 配下等を選択するのが妥当です。)   
+
 # Run
 
+1. WhatsNew.bat と WhatsNew.ps1 を任意のフォルダーに配置して、WhatsNew.bat を実行します。(探索するフォルダーや深さを変更するには、WhatsNew.bat 内の `<User Setting>` 内の設定を変更してください。)  
+2. 探索結果が whats-new.html に出力され、デフォルトブラウザでそのファイルが開かれます。  
+3. パスの項目をクリックすると、エクスプローラーが起動します。(デフォルト状態だと下図のようにブラウザ上に 'kickexplorer.bat を開きますか？' ダイアログが表示されます。)  
 ![](assets/images/2023-12-04-11-19-34.png)  
 
-//todo 確認  
-設定を元に戻すには、
-`C:\Users\(ユーザー名)\AppData\Local\Google\Chrome\User Data\Default\Preferences` の、`"allowed_origin_protocol_pairs":` の項目 `{"file://":{"kickexplorer":true}}` を削除する  
-
 # Uninstall
+uninstall.bat を '管理者として実行' します。  
 
-# Restrictions
+Note:  
+ - 任意のフォルダーに配置した WhatsNew.bat と WhatsNew.ps1 は削除されません。手動で削除してください。
+ - ブラウザ上に表示された 'kickexplorer.bat を開きますか？' ダイアログで、'このタイプのリンクは常に関連付けられたアプリで開く' を選択していた場合は、その設定は元に戻しません。(手動で設定を元に戻すには、※Chromeの場合※ `C:\Users\(ユーザー名)\AppData\Local\Google\Chrome\User Data\Default\Preferences` ファイル内の、`"allowed_origin_protocol_pairs":` に対応する `{}` 内の項目 `"file://":{"kickexplorer":true}` を削除します。(Chrome 120.0.6099.110 で確認))
 
- - install.bat, uninstall.bat ともに SJIS 環境しか想定していません。  
-   (コマンドプロント環境がデフォルトだと SJIS のため。)  
+# Limitations
 
-   todo uninstall.bat でレジストリエントリの既定エントリかどうかを評価するために、'名前' が `(既定)` かどうかで評価しているため
-   todo フォルダー選択ダイアログで `キャンセル` されたかどうかを判断するため
+ - install.bat, uninstall.bat ともに SJIS 環境しか想定していません。(コマンドプロント環境がデフォルトだと SJIS であり、install.bat のフォルダー選択ダイアログで `キャンセル` されたかどうかを判断するため。また、uninstall.bat でレジストリエントリの既定エントリかどうかを評価するために、'名前' が `(既定)` かどうかで評価しているため。)
+ - 動作確認は以下環境でのみ確認済み
+    | OS               | ブラウザ              |
+    | ---------------- | --------------------- |
+    | Windows10 (22H2) | Chrome 120.0.6099.110 |
 
 # Developing policies
 
  - Windows で動作すればいい
  - Microsoft Offece は使わない (使いたくない & 頼りたくない)
  - ウェブブラウザは Chrome でだけ動作確認できればいい
- - ブラウザでリンククリック -> エクスプローラー起動は[カスタム URI](https://learn.microsoft.com/ja-jp/windows/uwp/launch-resume/launch-default-app) を利用する (他に簡単でスマートな実装ができる方法が見つからないため)
+ - ブラウザでリンククリック -> エクスプローラー起動は [カスタム URI](https://learn.microsoft.com/ja-jp/windows/uwp/launch-resume/launch-default-app) を利用する (他に簡単でスマートな実装ができる方法が見つからないため)
  - 起動されるアプリはバッチファイル `kickexplorer.bat` で統一 (install.bat, uninstall.bat, WhatsNew.ps1 でそれぞれ定義。なにかしらのファイル / レジストリを参照して共有はめんどくさいので)
  - カスタム URI スキーム名は `kickexplorer` で統一 (install.bat, uninstall.bat, WhatsNew.ps1 でそれぞれ定義。なにかしらのファイル / レジストリを参照して共有はめんどくさいので)
  - レジストリアクセスは、.bat ファイル内で `reg` する事で処理。(.reg ファイルは使わない。インストールディレクトリを動的に処理したいため。)
@@ -50,8 +56,7 @@
 
 ### Run
 
-1. 任意のフォルダーにバッチファイルを配置 & 好きなときにバッチを叩く (カスタム URI のインストール済み確認はしない。.html ファイルの生成には影響無いため。インストールされていない場合はブラウザでリンククリック後にエラーが発生するはずなので、そこで気づく //todo 本当？)
-
+1. 任意のフォルダーにバッチファイルを配置 & 好きなときにバッチを叩く (カスタム URI のインストール済み確認はしない。.html ファイルの生成には影響無いため。インストールされていない場合はブラウザでリンククリック後に下図のエラーが発生するはずなので、そこで気づく想定)  
 ![](assets/images/2023-12-14-22-05-39.png)  
 2. バッチファイルのが配置されたディレクトリから規定の深さのディレクトリを走査 (todo 特定のディレクトリ・ファイルは ignore できるようにしたい) (ディレクトリ一覧を簡単に取得・操作したいので、 Powershell で実施。ただし起動は .bat 。Powershell は実行ポリシーがデフォルトで `Restricted` なため。)
 3. タイムスタンプ (更新日時) の降順でソートされた表が .html ファイルに書き込む (ファイルは強制上書きで OK。 .html ファイルはブラウザでしか開くつもりがないので、ファイルのロックはされない想定)
@@ -67,7 +72,7 @@
 5. インストール先のディレクトリ削除 -> 失敗した場合は、メッセージを表示して終了 -> `pause` (ディレクトリが BISY 状態の時を想定)
 6. メッセージを表示して pause
 
-# Todo
+# Known issues
 
  - kickexplorer.bat の起動でコマンドプロントが出てきて鬱陶しい (パスが存在しない場合はエラーを表示捺せ無ければいけないのでしょうがない？)
- - kickexplorer.ps1 内で `Write-Error` 時にエラー発生箇所まで表示されてしまう (エラーメッセージは表示したい)
+ - kickexplorer.ps1 内で `Write-Error` 時にエラー発生箇所まで表示されてしまう (エラーメッセージだけを表示したい)

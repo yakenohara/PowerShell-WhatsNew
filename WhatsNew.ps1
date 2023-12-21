@@ -23,7 +23,7 @@
 
 <#
     .SYNOPSIS
-    //todo 関数またはスクリプトの簡単な説明
+    指定された深さに該当するディレクトリのみを探索し、ファイルエクスプローラーへのリンクを含んだ表をタイムスタンプ順 (降順) にソートして HTML ファイルに書き出します。
     
     .PARAMETER DirInfo
     走査対象ディレクトリ
@@ -283,7 +283,7 @@ $outFileWriter.WriteLine(@'
 <html>
     <head>
         <meta http-equiv="content-type" content="text/html; charset=utf-8">
-        <title>Todo タイトル</title>
+        <title>最新ディレクトリ一覧</title>
     </head>
     <body>
 '@)
