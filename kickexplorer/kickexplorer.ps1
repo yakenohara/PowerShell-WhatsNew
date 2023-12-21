@@ -29,8 +29,13 @@ $str_schemeName = 'kickexplorer'
 Add-Type -AssemblyName System.Web
 # Write-Host ($Args[0] -replace "^$str_schemeName`:", "")
 $str_path = [System.Web.HttpUtility]::UrlDecode(($Args[0] -replace "^$str_schemeName`:", "")) # パーセントエンコードされた文字列をデコード
+$str_path = $str_path -replace ':20:', ' '
+$str_path = $str_path -replace ':24:', '$'
+$str_path = $str_path -replace ':25:', '%'
+$str_path = $str_path -replace ':26:', '&'
+$str_path = $str_path -replace ':2B:', '+'
 
-if (-not (Test-Path $str_path)) {
+if (-not (Test-Path -LiteralPath $str_path)) {
     Write-Error "パス `"$str_path`" が存在しません。"
     exit 1
 }
@@ -38,7 +43,7 @@ if (-not (Test-Path $str_path)) {
 # エクスプローラーで表示
 # Note
 # なぜか `/n` を付与しないと explorer が最前面に現れない
-if ((Get-Item $str_path).PSIsContainer) { # パスがフォルダーの場合
+if ((Get-Item -LiteralPath $str_path).PSIsContainer) { # パスがフォルダーの場合
     Start-Process explorer "/n, `"$str_path`"" # フォルダーを開く
 } else { # パスがファイルの場合
     Start-Process explorer "/n,/select,`"$str_path`"" # ファイルを選択した状態でエクスプローラーを開く

@@ -103,25 +103,20 @@ Param(
 # 共通関数
 # 
 # カスタム URI でパーセントエンコードしてくれない文字のみパーセントエンコードする
-Function func_PercentEncodeForSpecialChar($str_ReplaceFrom) {
+Function func_EspaceSpecialChar($str_ReplaceFrom) {
     
-    $str_ReplaceFrom = ($str_ReplaceFrom -replace '%','%25') # 後の処理で変換後文字列に `%` を含む可能性があるので、1番最初に行う
-
-    $str_ReplaceFrom = ($str_ReplaceFrom -replace '&','%26')
-    # Note
-    # `&` はブラウザ -> カスタム URI へ渡す時にエスケープしてくれないようなので、ここで実施
-    # エスケープしないと、バッチファイル内で カスタム URI 経由で渡ってきた引数文字列にそのまま `&` が入ってしまうので、
-    # `%~1` による引数展開時に `認識されていません。` となってしまう
-
-    $str_ReplaceFrom = ($str_ReplaceFrom -replace '\+','%2B')
-    $str_ReplaceFrom = ($str_ReplaceFrom -replace ' ','+')
+    $str_ReplaceFrom = ($str_ReplaceFrom -replace ' ', ':20:') # ` ` はブラウザ -> カスタム URI へ渡す際に削除されてしまう可能性がある (どんな場合に削除される時があるかは不明)
+    $str_ReplaceFrom = ($str_ReplaceFrom -replace '\$', ':24:') # `$` は kickexplorer.bat 内で引数文字列展開時に [prompt](https://learn.microsoft.com/ja-jp/windows-server/administration/windows-commands/prompt) と解釈されてしまう
+    $str_ReplaceFrom = ($str_ReplaceFrom -replace '%', ':25:') # `%` はブラウザ -> カスタム URI へ渡す際にパーセントエンコードされない可能性がある (どんな場合にエンコードされないのか不明)
+    $str_ReplaceFrom = ($str_ReplaceFrom -replace '&', ':26:') # `&` は kickexplorer.bat 内で引数文字列展開時に `認識されていません。` となってしまう
+    $str_ReplaceFrom = ($str_ReplaceFrom -replace '\+', ':2B:') # ` ` はブラウザ -> カスタム URI へ渡す際に削除されてしまう可能性がある (どんな場合に削除される時があるかは不明)
 
     return $str_ReplaceFrom
 }
 
 # <引数チェック>
 if ($DirInfo -eq $null) { # `-DirInfo` が指定されなかった場合
-    [System.String]$DirInfo = $PSScriptRoot # この .ps1 ファイルが配置されたディレクトリを指定。文字列型。(`Get-ChildItem` のオプション `-Path` が文字列型である必要があるため)
+    [System.String]$DirInfo = (Get-Location).Path # カレントディレクトリを指定。文字列型。(`Get-ChildItem` のオプション `-Path` が文字列型である必要があるため)
 
 } elseif ($DirInfo -is [System.IO.DirectoryInfo]) { # ディレクトリオブジェクトの指定の場合
     [System.String]$DirInfo = $DirInfo.FullName # パス文字列に変換 (`Get-ChildItem` のオプション `-Path` が文字列型である必要があるため)
@@ -132,21 +127,21 @@ if ($TimeDepth -eq $null){ # `-TimeDepth` が指定されなかった場合
     $TimeDepth = [System.Int32]$TimeDepth # `System.Int32` 型にキャスト (バッチファイルでマイナス値を指定した場合は `System.String` 型となるため)
 }
 if ($FileOnly) { # 走査対象をファイルに限定している場合
-    $str_FileOpt = " -File"
+    $str_FileOpt = ' -File'
 } else {
-    $str_FileOpt = ""
+    $str_FileOpt = ''
 }
 if ($DirectoryOnly) { # 走査対象をファイルに限定している場合
-    $str_DirOpt = " -Directory"
+    $str_DirOpt = ' -Directory'
 } else {
-    $str_DirOpt = ""
+    $str_DirOpt = ''
 }
 if ($OutFilePath -eq $null) { # 出力する .html ファイルパスが指定されなかった場合
     # 'カレントディレクトリ'\whats-new.html
     $str_OutFilePath = (Get-Location).Path + '\whats-new.html'
 } else { # 出力する .html ファイルパスが指定されている場合
-    $str_tmp = Split-Path $OutFilePath
-    if (-Not(Test-Path $str_tmp)) { # 指定パスの親ディレクトリが存在しない場合
+    $str_tmp = Split-Path -Path $OutFilePath
+    if (-Not(Test-Path -LiteralPath $str_tmp)) { # 指定パスの親ディレクトリが存在しない場合
         Write-Error "フォルダ `"$str_tmp`" が存在しません。"
         exit 1
         # Note:
@@ -154,13 +149,13 @@ if ($OutFilePath -eq $null) { # 出力する .html ファイルパスが指定�
         # `%errorlevel%` で取得可能な値しか返さない(`0` or `1` しか使えない仕様?)
         # `return` を使用するとコマンドプロンプトに値が表示されてしまう
     }
-    $str_OutFilePath = (Resolve-Path $str_tmp).Path + '\' + (Split-Path $OutFilePath -Leaf)
+    $str_OutFilePath = (Resolve-Path -LiteralPath $str_tmp).Path + '\' + (Split-Path -Path $OutFilePath -Leaf)
 }
 # </引数チェック>
 
 if ($Depth -lt 0) {
     [System.UInt32]$NumOfUpLevelOfHierarchy = $Depth * (-1)
-    $DirInfo = Convert-Path ($DirInfo + ("\.." * $NumOfUpLevelOfHierarchy))
+    $DirInfo = Convert-Path -LiteralPath ($DirInfo + ("\.." * $NumOfUpLevelOfHierarchy))
     # Note:
     # 存在しないパスが指定された場合は "Convert-Path : パス '(パス名)' が存在しないため検出できません。" でエラー終了する
 
@@ -171,7 +166,8 @@ if ($Depth -lt 0) {
 }
 
 # 検索対象となる `System.IO.FileInfo` オブジェクトリストを作成
-$str_GetChildItemCmdlet = "Get-ChildItem -Path `"$DirInfo`"$str_FileOpt$str_DirOpt -Recurse -Depth $uint32_ScanDepth -Force"
+$str_Tmp = ('''' + ($DirInfo -replace '''', '''''' ) + '''') # Note `$DirInfo` 内に `` ` `` (バッククォート) が存在する場合、`Get-ChildItem` 実行時に `` ` `` が消えてしまう為、ここで一度展開しておく
+$str_GetChildItemCmdlet = "Get-ChildItem -LiteralPath $str_Tmp$str_FileOpt$str_DirOpt -Recurse -Depth $uint32_ScanDepth -Force"
 
 $obj_FofDInfos = Invoke-Expression $str_GetChildItemCmdlet | # `System.IO.FileInfo` オブジェクトリストを取得
     Sort-Object -Property FullName # フルパスの名称で sort
@@ -185,14 +181,14 @@ if ($obj_FofDInfos -eq $null){ # 対象件数が 0 だった場合
 $obj_PathInfo = New-Object System.Collections.ArrayList
 
 [System.Management.Automation.PathInfo]$obj_Curdir = Get-Location # カレントディレクトリを一時保存
-Set-Location $DirInfo # 相対パスを取得するためにカレントディレクトリを指定ディレクトリに移動
+Set-Location -LiteralPath $DirInfo # 相対パスを取得するためにカレントディレクトリを指定ディレクトリに移動
 
 $int32_tmp = ($TimeDepth - $Depth - 1)
 for ($int32_Idx = 0 ; $int32_Idx -lt $obj_FofDInfos.count ; $int32_Idx++){
     
     # Write-Host "($($int32_Idx + 1) of $($obj_FofDInfos.count)) $($obj_FofDInfos[$int32_Idx].FullName)"
     # Write-Host $obj_FofDInfos[$int32_Idx].GetType().FullName
-    [System.String]$str_RelPath = Resolve-Path -Path $obj_FofDInfos[$int32_Idx].FullName -Relative # カレントディレクトリからの相対パスを取得
+    [System.String]$str_RelPath = Resolve-Path -LiteralPath $obj_FofDInfos[$int32_Idx].FullName -Relative # カレントディレクトリからの相対パスを取得
     $str_RelPath = $str_RelPath -replace "^\.\\","" # 先頭の `.\` を削除
     # Write-host $str_RelPath
 
@@ -203,11 +199,11 @@ for ($int32_Idx = 0 ; $int32_Idx -lt $obj_FofDInfos.count ; $int32_Idx++){
 
             IF ($obj_FofDInfos[$int32_Idx].GetType() -eq [System.IO.DirectoryInfo]) { # ディレクトリの場合
                 
-                $str_FullName = $obj_FofDInfos[$int32_Idx].FullName
+                $str_FullName = ('''' + ($obj_FofDInfos[$int32_Idx].FullName -replace '''', '''''' ) + '''')
                 if (0 -le $int32_tmp) {
-                    $str_GetChildItemCmdlet = "Get-ChildItem -Path `"$str_FullName`"$str_FileOpt$str_DirOpt -Recurse -Depth $int32_tmp -Force"
+                    $str_GetChildItemCmdlet = "Get-ChildItem -LiteralPath $str_FullName$str_FileOpt$str_DirOpt -Recurse -Depth $int32_tmp -Force"
                 } else {
-                    $str_GetChildItemCmdlet = "Get-ChildItem -Path `"$str_FullName`"$str_FileOpt$str_DirOpt -Recurse -Force"
+                    $str_GetChildItemCmdlet = "Get-ChildItem -LiteralPath $str_FullName$str_FileOpt$str_DirOpt -Recurse -Force"
                 }
                 $obj_FofDInfosForTime = Invoke-Expression $str_GetChildItemCmdlet | Sort-Object -Property LastWriteTime -Descending
                 
@@ -325,18 +321,18 @@ for ($int32_Idx = 0 ; $int32_Idx -lt $obj_SortedPathInfo.count ; $int32_Idx++){
         $str_EraAndYY = '(' + $obj_SortedPathInfo[$int32_Idx].LastWriteTime.ToString("gyy年", $obj_Culture) + ')'
     }
 
-    If ($obj_SortedPathInfo[$int32_Idx].ChildPathName -eq $null) { # 子要素から 'LastWriteTime' を取得した場合
+    If ($obj_SortedPathInfo[$int32_Idx].ChildPathName -eq $null) { # 子要素から 'LastWriteTime' を取得していない場合
         $str_CstmURIForChild = ''
 
-    } else { # 子要素から 'LastWriteTime' を取得していない場合
+    } else { # 子要素から 'LastWriteTime' を取得した場合
 
-        Set-Location $obj_SortedPathInfo[$int32_Idx].PathName # 相対パスを取得するためにカレントディレクトリを指定ディレクトリに移動
+        Set-Location -LiteralPath $obj_SortedPathInfo[$int32_Idx].PathName # 相対パスを取得するためにカレントディレクトリを指定ディレクトリに移動
         # Write-Host $obj_SortedPathInfo[$int32_Idx].ChildPathName
-        $str_RelPath = (Resolve-Path -Path $obj_SortedPathInfo[$int32_Idx].ChildPathName -Relative) -replace "^\.\\","" # 先頭の `.\` を削除
+        $str_RelPath = (Resolve-Path -LiteralPath $obj_SortedPathInfo[$int32_Idx].ChildPathName -Relative) -replace "^\.\\","" # 先頭の `.\` を削除
         $str_CstmURIForChild =
             ' ' +
             '<a href="kickexplorer:' +
-            (func_PercentEncodeForSpecialChar($obj_SortedPathInfo[$int32_Idx].ChildPathName)) + # カスタム URI へ渡すパラメータ文字列
+            (func_EspaceSpecialChar($obj_SortedPathInfo[$int32_Idx].ChildPathName)) + # カスタム URI へ渡すパラメータ文字列
             '">(' +
             $str_RelPath + # ブラウザ表示用パス文字列
             ')</a>'
@@ -344,7 +340,7 @@ for ($int32_Idx = 0 ; $int32_Idx -lt $obj_SortedPathInfo.count ; $int32_Idx++){
 
     $outFileWriter.WriteLine(
         '                <tr><td><a href="kickexplorer:' +
-        (func_PercentEncodeForSpecialChar($obj_SortedPathInfo[$int32_Idx].PathName)) + # カスタム URI へ渡すパラメータ文字列
+        (func_EspaceSpecialChar($obj_SortedPathInfo[$int32_Idx].PathName)) + # カスタム URI へ渡すパラメータ文字列
         '">' +
         $obj_SortedPathInfo[$int32_Idx].PathName + # ブラウザ表示用パス文字列
         '</a></td><td><time datetime="' +
