@@ -113,6 +113,14 @@ Function func_EspaceSpecialChar($str_ReplaceFrom) {
 
     return $str_ReplaceFrom
 }
+# 
+# `Get-ChildItem -LiteralPath` に指定するパス文字列の中で、シングルクォートがあった場合にエスケープさせる
+Function func_EspaceQuoteChar($str_ReplaceFrom) {
+    $str_ReplaceFrom = ($str_ReplaceFrom -replace '''', '''''') # U0027 `'` (シングルクォート)
+    $str_ReplaceFrom = ($str_ReplaceFrom -replace  ''’', ''''’')   # U2019 `'` (シングルクォート(全角))
+
+    return $str_ReplaceFrom
+}
 
 # <引数チェック>
 if ($DirInfo -eq $null) { # `-DirInfo` が指定されなかった場合
@@ -166,7 +174,7 @@ if ($Depth -lt 0) {
 }
 
 # 検索対象となる `System.IO.FileInfo` オブジェクトリストを作成
-$str_Tmp = ('''' + ($DirInfo -replace '''', '''''' ) + '''') # Note `$DirInfo` 内に `` ` `` (バッククォート) が存在する場合、`Get-ChildItem` 実行時に `` ` `` が消えてしまう為、ここで一度展開しておく
+$str_Tmp = ('''' + (func_EspaceQuoteChar($DirInfo)) + '''') # Note `$DirInfo` 内に `` ` `` (バッククォート) が存在する場合、`Get-ChildItem` 実行時に `` ` `` が消えてしまう為、ここで一度展開しておく
 $str_GetChildItemCmdlet = "Get-ChildItem -LiteralPath $str_Tmp$str_FileOpt$str_DirOpt -Recurse -Depth $uint32_ScanDepth -Force"
 
 $obj_FofDInfos = Invoke-Expression $str_GetChildItemCmdlet | # `System.IO.FileInfo` オブジェクトリストを取得
@@ -199,7 +207,7 @@ for ($int32_Idx = 0 ; $int32_Idx -lt $obj_FofDInfos.count ; $int32_Idx++){
 
             IF ($obj_FofDInfos[$int32_Idx].GetType() -eq [System.IO.DirectoryInfo]) { # ディレクトリの場合
                 
-                $str_FullName = ('''' + ($obj_FofDInfos[$int32_Idx].FullName -replace '''', '''''' ) + '''')
+                $str_FullName = ('''' + (func_EspaceQuoteChar($obj_FofDInfos[$int32_Idx].FullName)) + '''')
                 if (0 -le $int32_tmp) {
                     $str_GetChildItemCmdlet = "Get-ChildItem -LiteralPath $str_FullName$str_FileOpt$str_DirOpt -Recurse -Depth $int32_tmp -Force"
                 } else {
